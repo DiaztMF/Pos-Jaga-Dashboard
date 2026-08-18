@@ -51,18 +51,28 @@ export function generateDemoAlerts(now, seed = 20260818) {
   // Kejadian terbaru selalu ada supaya kartu "kontak terakhir" tidak kosong,
   // tapi bukan chainsaw: demo tidak boleh membunyikan sirine sendiri.
   alerts.push(makeAlert(currentHour, random, 'VIBRATION', 0, now - 4 * 60_000));
+
+  // Denyut tiap 30 menit, persis seperti HEARTBEAT_INTERVAL_S di firmware.
+  // Ikut disertakan supaya demo membuktikan denyut tidak mencemari hitungan
+  // kejadian, grafik pola, maupun riwayat.
+  for (let back = 47; back >= 0; back -= 1) {
+    const at = now - back * 30 * 60_000;
+    alerts.push({ ...makeAlert(0, random, 'HEARTBEAT', Math.floor(back / 2), at), confidence: 0 });
+  }
+
   return alerts.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 function makeAlert(hourStart, random, type, hoursBack, forcedAt) {
   const isChainsaw = type === 'CHAINSAW';
+  const code = { CHAINSAW: '0xAA', VIBRATION: '0xBB', HEARTBEAT: '0xCC' }[type];
   // Baterai turun perlahan sepanjang 24 jam, dari 4.05 V ke sekitar 3.62 V.
   const drain = 4.05 - (23 - hoursBack) * 0.018 - random() * 0.02;
 
   return {
     node_id: random() < 0.78 ? '0x01' : '0x02',
     alert_type: type,
-    alert_code: isChainsaw ? '0xAA' : '0xBB',
+    alert_code: code,
     confidence: isChainsaw ? 82 + Math.round(random() * 16) : 61 + Math.round(random() * 24),
     battery: Number(drain.toFixed(2)),
     timestamp: forcedAt ?? hourStart + Math.floor(random() * HOUR_MS),

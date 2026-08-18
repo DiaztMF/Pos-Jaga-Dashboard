@@ -158,7 +158,7 @@
               <span class="h-0.5 w-5 rounded bg-critical"></span> Gergaji mesin
             </span>
             <span class="flex items-center gap-2">
-              <span class="h-0.5 w-5 rounded border-t-2 border-dashed border-warning"></span> Getaran alam
+              <span class="h-0.5 w-5 rounded border-t-2 border-dashed border-warning"></span> Getaran pohon
             </span>
           </div>
         </div>
@@ -239,7 +239,7 @@
             <i data-lucide="battery-medium" class="h-4 w-4 text-ink-3"></i>
             Tren baterai node
           </h2>
-          <p class="mt-1 text-xs text-ink-3">Garis putus merah adalah ambang kritis 3.3 V.</p>
+          <p id="battery-caption" class="mt-1 text-xs text-ink-3">Garis putus merah adalah ambang kritis 3.3 V.</p>
           <div class="relative mt-3 h-[150px]">
             <canvas id="chart-battery" aria-label="Grafik garis tegangan baterai node" role="img"></canvas>
             <p data-empty="chart-battery" class="absolute inset-0 grid place-items-center text-center text-sm text-ink-3">
@@ -267,7 +267,7 @@
               <dt class="text-ink-3">Sensor getaran</dt><dd class="font-medium">MPU6050</dd>
             </div>
             <div class="flex justify-between gap-4">
-              <dt class="text-ink-3">Siklus tidur</dt><dd class="font-medium">60 detik</dd>
+              <dt class="text-ink-3">Siklus tidur</dt><dd class="font-medium">10 detik</dd>
             </div>
           </dl>
         </article>

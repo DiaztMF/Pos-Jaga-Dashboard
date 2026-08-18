@@ -12,7 +12,7 @@
         ".validate": "newData.hasChildren(['node_id', 'alert_type', 'confidence', 'battery', 'timestamp'])",
 
         "node_id":    { ".validate": "newData.isString() && newData.val().length <= 12" },
-        "alert_type": { ".validate": "newData.val() == 'CHAINSAW' || newData.val() == 'VIBRATION' || newData.val() == 'UNKNOWN'" },
+        "alert_type": { ".validate": "newData.val() == 'CHAINSAW' || newData.val() == 'VIBRATION' || newData.val() == 'HEARTBEAT' || newData.val() == 'UNKNOWN'" },
         "alert_code": { ".validate": "newData.isString() && newData.val().length <= 6" },
         "confidence": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
         "battery":    { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },

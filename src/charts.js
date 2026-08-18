@@ -69,7 +69,8 @@ function tooltipStyle() {
   };
 }
 
-/** Pola 24 jam: chainsaw (ancaman manusia) versus getaran alam.
+/** Pola 24 jam: gergaji mesin (terklasifikasi TinyML) versus getaran pohon
+ *  (MPU6050, tanpa klasifikasi penyebab).
  *  ponytail: tension 0 disengaja. Ini data cacah bilangan bulat, kurva halus
  *  akan menggambar "1,4 kejadian" di menit yang tidak pernah ada kejadiannya. */
 export function renderHourly(canvas, buckets) {
@@ -95,7 +96,7 @@ export function renderHourly(canvas, buckets) {
           pointHoverBackgroundColor: critical,
         },
         {
-          label: 'Getaran alam',
+          label: 'Getaran pohon',
           data: buckets.map((b) => b.nature),
           borderColor: warning,
           backgroundColor: alpha(warning, '16'),

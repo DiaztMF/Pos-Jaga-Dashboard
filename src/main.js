@@ -7,8 +7,8 @@ import {
 
 import { normalizeAlert } from './alert.js';
 import {
-  DAY_MS, batteryLevel, batterySeries, composition, hourlyBuckets,
-  humanSince, nodeHealth, perNode, withinWindow,
+  DAY_MS, batteryLevel, batterySeries, composition, hourlyBuckets, humanSince,
+  incidents, nodeHealth, perNode, withinWindow,
 } from './stats.js';
 import { renderBattery, renderComposition, renderHourly } from './charts.js';
 import {
@@ -26,6 +26,11 @@ const $ = (id) => document.getElementById(id);
 
 const THEME_KEY = 'voxsilva_theme';
 const LIVE_WINDOW_MS = 60_000; // kejadian lebih tua dari ini adalah riwayat, bukan alarm
+
+/** Cermin dari BATTERY_ADC_ENABLED di node_hutan.ino. Selama sensornya belum
+ *  terpasang, firmware mengirim konstanta 3,8 V; menampilkannya sebagai bacaan
+ *  berarti memasang telemetri palsu di layar petugas. */
+const BATTERY_MONITORING = import.meta.env.VITE_BATTERY_MONITORING === 'on';
 
 /* ------------------------------------------------------------------- state */
 
@@ -175,6 +180,16 @@ function renderMetrics(comp, health, lastBattery, now) {
       : 'Belum ada kejadian tercatat';
   }
 
+  if (!BATTERY_MONITORING) {
+    $('kpi-battery').textContent = 'Nonaktif';
+    $('kpi-battery').className = 'mt-2 text-2xl font-semibold text-ink-3';
+    $('kpi-battery-sub').textContent = 'Sensor ADC baterai belum aktif di firmware node';
+  } else renderBatteryMetric(lastBattery);
+
+  renderLastSeen(health, now);
+}
+
+function renderBatteryMetric(lastBattery) {
   const [batteryTone, batteryNote] = {
     critical: ['text-critical', 'Kritis, node perlu didatangi'],
     low: ['text-warning', 'Mulai lemah, siapkan penggantian'],
@@ -182,10 +197,14 @@ function renderMetrics(comp, health, lastBattery, now) {
     unknown: ['text-ink', 'Menunggu bacaan pertama'],
   }[batteryLevel(lastBattery)];
 
-  $('kpi-battery').textContent = lastBattery === null ? '--' : `${lastBattery.toFixed(2)} V`;
+  // Node mengirim baterai sebagai uint8 volt x 10, jadi resolusinya 0,1 V.
+  // Menulis dua desimal akan mengarang presisi yang tidak pernah dikirim.
+  $('kpi-battery').textContent = lastBattery === null ? '--' : `${lastBattery.toFixed(1)} V`;
   $('kpi-battery').className = `tnum mt-2 text-2xl font-semibold ${batteryTone}`;
   $('kpi-battery-sub').textContent = batteryNote;
+}
 
+function renderLastSeen(health, now) {
   if (health.lastSeen === null) {
     $('kpi-lastseen').textContent = '--';
     $('kpi-lastseen').removeAttribute('title');
@@ -210,7 +229,7 @@ function renderCharts(comp, battery, now) {
   if (chartArea('chart-composition', comp.total === 0)) {
     renderComposition($('chart-composition'), comp);
   }
-  if (chartArea('chart-battery', battery.length < 2)) {
+  if (chartArea('chart-battery', !BATTERY_MONITORING || battery.length < 2)) {
     renderBattery($('chart-battery'), battery);
   }
 }
@@ -249,7 +268,7 @@ function renderDistribution() {
 function renderLog() {
   const now = Date.now();
   const body = $('log-body');
-  const visible = alerts
+  const visible = incidents(alerts)
     .filter((a) => (logFilter === 'chainsaw' ? a.isChainsaw : logFilter === 'nature' ? a.isVibration : true))
     .sort((a, b) => b.at - a.at)
     .slice(0, 100);
@@ -267,7 +286,7 @@ function renderLog() {
       : alert.isVibration
         ? 'inline-flex items-center whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning'
         : 'inline-flex items-center whitespace-nowrap rounded-full bg-sunk px-2 py-0.5 text-xs font-semibold text-ink-2';
-    badge.textContent = alert.isChainsaw ? 'Gergaji mesin' : alert.isVibration ? 'Getaran alam' : alert.label;
+    badge.textContent = alert.isChainsaw ? 'Gergaji mesin' : alert.isVibration ? 'Getaran pohon' : alert.label;
 
     const badgeCell = document.createElement('td');
     badgeCell.className = 'px-5 py-2.5';
@@ -277,8 +296,12 @@ function renderLog() {
       timeCell(alert.at, now),
       cell(alert.nodeId, 'px-5 py-2.5 font-mono text-xs'),
       badgeCell,
-      cell(alert.confidence === null ? '--' : `${alert.confidence}%`, 'tnum px-5 py-2.5 text-right'),
-      cell(alert.battery === null ? '--' : `${alert.battery.toFixed(2)} V`, 'tnum px-5 py-2.5 text-right text-ink-2'),
+      // Getaran tidak melewati klasifikasi apa pun: firmware mengirim 100 sebagai
+      // konstanta. Menampilkannya sebagai persen keyakinan akan menyesatkan.
+      cell(alert.isChainsaw && alert.confidence !== null ? `${alert.confidence}%` : '--',
+        'tnum px-5 py-2.5 text-right'),
+      cell(BATTERY_MONITORING && alert.battery !== null ? `${alert.battery.toFixed(1)} V` : '--',
+        'tnum px-5 py-2.5 text-right text-ink-2'),
     );
     body.append(tr);
   }
@@ -316,9 +339,10 @@ function cell(text, className) {
 function renderCalmRibbon(comp, health, now) {
   const recentVibration = alerts.some((a) => a.isVibration && now - a.at < 15 * 60_000);
 
+
   if (recentVibration) {
-    setRibbon('warning', 'Getaran terdeteksi',
-      'Sensor MPU6050 mencatat getaran dalam 15 menit terakhir. Belum ada suara gergaji mesin.');
+    setRibbon('warning', 'Getaran pohon terdeteksi',
+      'Sensor MPU6050 mencatat getaran dalam 15 menit terakhir. Penyebabnya belum tentu manusia, dan belum ada suara gergaji mesin.');
   } else if (health.status === 'silent') {
     setRibbon('normal', 'Hutan aman',
       `Tidak ada ancaman aktif. Kontak terakhir ${humanSince(now - health.lastSeen)}.`);
@@ -430,6 +454,12 @@ function connect({ databaseURL, apiKey }) {
 }
 
 /* ----------------------------------------------------------------- wire-up */
+
+if (!BATTERY_MONITORING) {
+  $('battery-caption').hidden = true; // ambang tidak relevan selama grafiknya diparkir
+  document.querySelector('[data-empty="chart-battery"]').textContent =
+    'Monitoring baterai belum aktif. Nyalakan VITE_BATTERY_MONITORING setelah sensor terpasang.';
+}
 
 applyTheme(localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light');
 createIcons({ icons: ICONS });

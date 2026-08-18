@@ -24,6 +24,9 @@ export function normalizeAlert(raw, now = Date.now()) {
     label: type.slice(0, 20) || 'ALERT',
     isChainsaw: type === 'CHAINSAW' || code === '0xaa',
     isVibration: type === 'VIBRATION' || code === '0xbb',
+    // Denyut berkala: telemetri baterai, bukan kejadian. Node mengirimnya
+    // walau hutan sepi, supaya baterai habis tidak berlalu tanpa terlihat.
+    isHeartbeat: type === 'HEARTBEAT' || code === '0xcc',
     confidence: confidence === null ? null : Math.max(0, Math.min(100, confidence)),
     battery,
     at: timestamp !== null && timestamp > 0 ? timestamp : now,

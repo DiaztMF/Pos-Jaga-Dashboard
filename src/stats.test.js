@@ -9,7 +9,12 @@ const NOW = 1_700_000_000_000;
 
 const alert = (over = {}) => ({
   nodeId: '0x01', label: 'CHAINSAW', isChainsaw: true, isVibration: false,
-  confidence: 90, battery: 3.8, at: NOW, ...over,
+  isHeartbeat: false, confidence: 90, battery: 3.8, at: NOW, ...over,
+});
+
+const heartbeat = (over = {}) => alert({
+  label: 'HEARTBEAT', isChainsaw: false, isVibration: false, isHeartbeat: true,
+  confidence: null, ...over,
 });
 
 test('ember jam menaruh kejadian di jam yang benar', () => {
@@ -79,4 +84,31 @@ test('selisih waktu dibaca sebagai kalimat', () => {
 test('jendela 24 jam memangkas riwayat lama', () => {
   const kept = withinWindow([alert({ at: NOW - 25 * HOUR_MS }), alert({ at: NOW - HOUR_MS })], NOW);
   assert.equal(kept.length, 1);
+});
+
+test('denyut tidak dihitung sebagai kejadian di mana pun', () => {
+  const data = [alert(), heartbeat(), heartbeat({ at: NOW - HOUR_MS })];
+
+  assert.equal(composition(data).total, 1, 'kartu kejadian 24 jam');
+  assert.deepEqual(perNode(data), [{ nodeId: '0x01', count: 1 }], 'sebaran per node');
+  assert.equal(
+    hourlyBuckets(data, NOW).reduce((sum, b) => sum + b.chainsaw + b.nature, 0), 1,
+    'grafik pola 24 jam',
+  );
+});
+
+test('denyut tetap menyumbang bacaan baterai dan bukti node hidup', () => {
+  const data = [heartbeat({ at: NOW - 60_000, battery: 3.71 })];
+  assert.deepEqual(batterySeries(data).map((p) => p.volts), [3.71]);
+  assert.equal(nodeHealth(data, NOW).status, 'online');
+});
+
+test('ambang senyap mengetat begitu node terbukti mengirim denyut', () => {
+  const threeHours = 3 * HOUR_MS;
+
+  // Tanpa denyut, diam tiga jam masih wajar: node memang hanya bicara saat ada kejadian.
+  assert.equal(nodeHealth([alert({ at: NOW - threeHours })], NOW).status, 'online');
+
+  // Dengan denyut yang pernah terlihat, diam tiga jam berarti denyutnya berhenti.
+  assert.equal(nodeHealth([heartbeat({ at: NOW - threeHours })], NOW).status, 'silent');
 });

@@ -54,7 +54,10 @@ color as "the forest is fine", which makes a single red panel impossible to miss
 - Composition doughnut plus a per-node breakdown, so the busiest node is identifiable once more than
   one node is deployed.
 - Battery trend line with the 3.3 V critical threshold drawn in, answering when a node must be
-  visited rather than just what it reads now.
+  visited rather than just what it reads now. Parked behind `VITE_BATTERY_MONITORING` until the
+  hardware exists, because the firmware currently transmits a hardcoded 3.8 V placeholder.
+- Periodic heartbeat (`0xCC`) counted as telemetry, never as an incident: it keeps battery readings
+  and proof-of-life flowing while the forest is quiet, and it is what makes silence meaningful.
 - Filterable event log, newest first, capped at 100 rows so an overnight shift cannot exhaust memory.
 - Dates where they resolve ambiguity, nowhere else. The 24-hour window always crosses midnight, so
   rows from an earlier day carry a "Kemarin" label under the time while today's rows stay bare, and
@@ -88,6 +91,10 @@ color as "the forest is fine", which makes a single red panel impossible to miss
 - **Integer counts are drawn with straight lines.** The 24-hour chart uses no curve smoothing, since
   a spline through hourly counts would draw fractional events at minutes when nothing happened.
 - **Numbers use tabular figures** so a reading that updates in place does not shift on screen.
+- **The interface never claims more than the sensors know.** The MPU6050 reports movement, not its
+  cause, so its events read "Getaran pohon" rather than naming a culprit. Battery arrives as
+  volts x 10 in a single byte, so it renders to one decimal. Vibration and heartbeat rows show `--`
+  for confidence because no classifier ran.
 
 ## Prerequisites
 
@@ -137,6 +144,7 @@ Treat both as public values and rely on the database rules for protection rather
 |----------|-------------|---------|----------|
 | `VITE_FIREBASE_DATABASE_URL` | Realtime Database instance the dashboard subscribes to | `https://voxsilva-forest-default-rtdb.asia-southeast1.firebasedatabase.app` | Yes |
 | `VITE_FIREBASE_API_KEY` | Firebase Web API key, needed once you add Firebase Auth to the project | `AIzaSyD-ExampleKeyReplaceWithYourOwn0000000` | No |
+| `VITE_BATTERY_MONITORING` | `on` once the node's battery divider exists, `off` otherwise | `off` | No |
 
 Without `VITE_FIREBASE_DATABASE_URL` the dashboard still loads and reports *"Belum dikonfigurasi"*,
 so a misconfigured guard post fails loudly instead of looking calm and empty.
@@ -192,9 +200,9 @@ There is no HTTP API of our own. The contract is the shape of the data written t
 | Field | Type | Notes |
 |-------|------|-------|
 | `node_id` | string | Forest node identifier, max 12 characters |
-| `alert_type` | string | `CHAINSAW`, `VIBRATION`, or `UNKNOWN`; anything else is rejected by the rules |
-| `alert_code` | string | `0xAA` chainsaw, `0xBB` vibration |
-| `confidence` | number | TinyML confidence, 0 to 100 |
+| `alert_type` | string | `CHAINSAW`, `VIBRATION`, `HEARTBEAT`, or `UNKNOWN`; anything else is rejected by the rules |
+| `alert_code` | string | `0xAA` chainsaw, `0xBB` vibration, `0xCC` heartbeat |
+| `confidence` | number | TinyML confidence, 0 to 100. Only meaningful for `CHAINSAW`; the other types send a constant, so the dashboard renders them as `--` |
 | `battery` | number | Node battery volts, 0 to 10 |
 | `timestamp` | number | Use Firebase's `{".sv": "timestamp"}` so the server clock wins over drifting device clocks |
 

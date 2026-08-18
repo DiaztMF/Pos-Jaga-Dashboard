@@ -11,7 +11,7 @@ test('payload normal dari pos_jaga.ino', () => {
   }, NOW);
   assert.deepEqual(a, {
     nodeId: '0x01', label: 'CHAINSAW', isChainsaw: true, isVibration: false,
-    confidence: 99, battery: 3.8, at: NOW,
+    isHeartbeat: false, confidence: 99, battery: 3.8, at: NOW,
   });
 });
 
@@ -38,4 +38,17 @@ test('nilai liar dijepit agar tidak merusak tampilan', () => {
   assert.equal(a.label.length, 20);
   assert.equal(a.confidence, 100);
   assert.equal(normalizeAlert({ confidence: -20 }, NOW).confidence, 0);
+});
+
+test('denyut berkala dikenali dan tidak tertukar dengan alarm', () => {
+  const beat = normalizeAlert({
+    node_id: '0x01', alert_type: 'HEARTBEAT', alert_code: '0xCC',
+    confidence: 0, battery: 3.8, timestamp: NOW,
+  }, NOW);
+  assert.equal(beat.isHeartbeat, true);
+  assert.equal(beat.isChainsaw, false);
+  assert.equal(beat.isVibration, false);
+
+  // Gateway lama yang belum mengenal HEARTBEAT tetap meneruskan kodenya.
+  assert.equal(normalizeAlert({ alert_code: '0xcc' }, NOW).isHeartbeat, true);
 });
