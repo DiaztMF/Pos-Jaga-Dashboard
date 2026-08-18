@@ -235,6 +235,16 @@ $('btn-reset-config').addEventListener('click', () => {
   location.reload();
 });
 
+// Simulasi alarm tanpa perangkat: jalankan __voxsilva.simulate('CHAINSAW') di
+// console saat `npm run dev`. Hilang otomatis dari build production.
+if (import.meta.env.DEV) {
+  window.__voxsilva = {
+    simulate: (type = 'CHAINSAW') => handleAlert({
+      node_id: '0x01', alert_type: type, confidence: 97, battery: 3.74, timestamp: Date.now(),
+    }),
+  };
+}
+
 const config = readConfig();
 $('input-db-url').value = config.databaseURL;
 if (config.isOverride) $('config-message').textContent = 'Memakai override lokal (localStorage), bukan .env.';
