@@ -5,6 +5,7 @@
 
     "alerts": {
       ".read": true,
+      ".indexOn": ["timestamp"],
 
       "$alert_id": {
         ".write": "!data.exists() && newData.exists()",

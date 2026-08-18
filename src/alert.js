@@ -20,7 +20,7 @@ export function normalizeAlert(raw, now = Date.now()) {
   const timestamp = toNumber(raw?.timestamp);
 
   return {
-    nodeId: String(raw?.node_id ?? '—').slice(0, 12),
+    nodeId: String(raw?.node_id ?? '--').slice(0, 12),
     label: type.slice(0, 20) || 'ALERT',
     isChainsaw: type === 'CHAINSAW' || code === '0xaa',
     isVibration: type === 'VIBRATION' || code === '0xbb',
