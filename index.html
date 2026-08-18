@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Dashboard real-time Pos Jaga VoxSilva: deteksi pembalakan liar via LoRa, TinyML, dan Firebase Realtime Database." />
+  <title>VoxSilva — Dashboard Pos Jaga (Monitoring Hutan Real-Time)</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+  <!-- TOP HEADER / NAVBAR -->
+  <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20 text-emerald-400">
+          <i data-lucide="trees" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-wide text-emerald-400 flex items-center gap-2">
+            VOXSILVA <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">POS JAGA GATEWAY</span>
+          </h1>
+          <p class="text-xs text-slate-400">Sistem Deteksi Pembalakan Liar &amp; Anomali Hutan Real-Time</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Status Koneksi Firebase -->
+        <div id="connection-badge" class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700" role="status" aria-live="polite">
+          <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="connection-text">Menghubungkan ke Firebase...</span>
+        </div>
+
+        <!-- Tombol Test Audio Sirine -->
+        <button id="btn-toggle-audio" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition">
+          <i data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+          <span>Tes Audio Alarm</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- OVERVIEW CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+      <!-- Card Status Utama -->
+      <div id="card-status" class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between transition-all">
+        <div>
+          <p class="text-xs font-medium text-slate-400">STATUS KEAMANAN</p>
+          <h3 id="status-title" class="text-xl font-extrabold text-emerald-400 mt-1">AMAN / SAFE</h3>
+          <p id="status-sub" class="text-xs text-slate-400 mt-0.5">Tidak ada ancaman terdeteksi</p>
+        </div>
+        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+      </div>
+
+      <!-- Card Total Peringatan Chainsaw -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-400">ALARM GERGAJI MESIN</p>
+          <h3 id="count-chainsaw" class="text-2xl font-extrabold text-red-400 mt-1">0</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Alert suara Chainsaw (0xAA)</p>
+        </div>
+        <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+          <i data-lucide="axe" class="w-8 h-8"></i>
+        </div>
+      </div>
+
+      <!-- Card Total Peringatan Getaran -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-400">ALARM GETARAN POHON</p>
+          <h3 id="count-vibration" class="text-2xl font-extrabold text-amber-400 mt-1">0</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Alert MPU6050 Motion (0xBB)</p>
+        </div>
+        <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+          <i data-lucide="activity" class="w-8 h-8"></i>
+        </div>
+      </div>
+
+      <!-- Card Baterai Node Terakhir -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-400">BATERAI NODE HUTAN</p>
+          <h3 id="node-battery" class="text-2xl font-extrabold text-emerald-400 mt-1">—</h3>
+          <p id="node-id-text" class="text-xs text-slate-400 mt-0.5">Node ID: —</p>
+        </div>
+        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+          <i data-lucide="battery-charging" class="w-8 h-8"></i>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- COLUMN 1 & 2: BANNER ALARM + LIVE LOG -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- BANNER PERINGATAN DARURAT -->
+        <div id="banner-alert" class="hidden rounded-xl border p-5 items-center justify-between bg-red-950/80 border-red-800 alarm-active" role="alert" aria-live="assertive">
+          <div class="flex items-center gap-4">
+            <div class="p-3 bg-red-500/20 text-red-400 rounded-full animate-pulse-ring">
+              <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <h2 id="banner-alert-title" class="text-lg font-bold text-red-300">PERINGATAN BAHAYA: GERGAJI MESIN TERDETEKSI!</h2>
+              <p id="banner-alert-desc" class="text-xs text-red-200 mt-1"></p>
+            </div>
+          </div>
+          <button id="btn-mute-alarm" type="button" class="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-xs font-bold text-white transition border border-red-600 shadow">
+            MUTE ALARM
+          </button>
+        </div>
+
+        <!-- RIWAYAT LOG ALARM REAL-TIME -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="list" class="w-5 h-5 text-emerald-400"></i>
+              <h3 class="font-bold text-slate-200 text-sm">Riwayat Kejadian Real-Time (Live Feed)</h3>
+            </div>
+            <span class="text-xs text-slate-400">Auto-update via Firebase</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th scope="col" class="px-4 py-3">Waktu</th>
+                  <th scope="col" class="px-4 py-3">Node ID</th>
+                  <th scope="col" class="px-4 py-3">Tipe Peringatan</th>
+                  <th scope="col" class="px-4 py-3">Tingkat AI (%)</th>
+                  <th scope="col" class="px-4 py-3">Baterai</th>
+                  <th scope="col" class="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="table-log-body" class="divide-y divide-slate-800/60 font-mono">
+                <tr id="table-placeholder">
+                  <td colspan="6" class="px-4 py-8 text-center text-slate-500 font-sans">
+                    Menunggu data peringatan pertama dari Firebase...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMN 3: INFO NODE + KONFIGURASI -->
+      <div class="space-y-6">
+
+        <!-- STATUS NODE HUTAN #1 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+              <i data-lucide="radio" class="w-4 h-4 text-emerald-400"></i>
+              Node Hutan #01
+            </h3>
+            <span id="node-online-badge" class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">MENUNGGU DATA</span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between py-1 border-b border-slate-800/40">
+              <span class="text-slate-400">Protokol LoRa</span>
+              <span class="font-medium text-slate-200">E220 915MHz</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/40">
+              <span class="text-slate-400">Model TinyML</span>
+              <span class="font-medium text-slate-200">TFLite v5 (Chainsaw)</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/40">
+              <span class="text-slate-400">Sensor Audio</span>
+              <span class="font-medium text-slate-200">INMP441 I2S</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/40">
+              <span class="text-slate-400">Sensor Motion</span>
+              <span class="font-medium text-slate-200">MPU6050 (INT)</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Siklus Deep Sleep</span>
+              <span class="font-medium text-slate-200">60 Detik / Trigger</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KONFIGURASI FIREBASE (override lokal atas nilai .env) -->
+        <form id="form-config" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+          <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+            <i data-lucide="settings" class="w-4 h-4 text-emerald-400"></i>
+            Pengaturan Firebase Database
+          </h3>
+          <p class="text-xs text-slate-400">
+            Build production membaca konfigurasi dari file <code class="text-emerald-400">.env</code>.
+            Isi form ini hanya jika Pos Jaga perlu menunjuk ke proyek Firebase lain (tersimpan di browser ini saja).
+          </p>
+
+          <div class="space-y-2 text-xs">
+            <div>
+              <label for="input-db-url" class="block text-slate-400 mb-1">Database URL (RTDB):</label>
+              <input id="input-db-url" name="dbUrl" type="url" required inputmode="url"
+                     placeholder="https://voxsilva-forest-default-rtdb.asia-southeast1.firebasedatabase.app"
+                     class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono text-[11px]" />
+            </div>
+            <div>
+              <label for="input-api-key" class="block text-slate-400 mb-1">API Key:</label>
+              <input id="input-api-key" name="apiKey" type="password" autocomplete="off"
+                     placeholder="AIzaSy..."
+                     class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono text-[11px]" />
+            </div>
+            <button type="submit" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded text-xs transition">
+              Simpan &amp; Hubungkan Firebase
+            </button>
+            <button id="btn-reset-config" type="button" class="w-full text-slate-400 hover:text-slate-200 text-[11px] underline underline-offset-2">
+              Hapus override, kembali ke konfigurasi .env
+            </button>
+            <p id="config-message" class="text-[11px] text-slate-400" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

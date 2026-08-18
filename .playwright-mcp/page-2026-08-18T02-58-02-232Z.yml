@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e9]:
+        - heading "VOXSILVA POS JAGA GATEWAY" [level=1] [ref=e10]:
+          - text: VOXSILVA
+          - generic [ref=e11]: POS JAGA GATEWAY
+        - paragraph [ref=e12]: Sistem Deteksi Pembalakan Liar & Anomali Hutan Real-Time
+      - generic [ref=e13]:
+        - status [ref=e14]:
+          - generic [ref=e16]: Firebase belum dikonfigurasi
+        - button "Tes Audio Alarm" [ref=e17]
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e26]:
+        - paragraph [ref=e27]: STATUS KEAMANAN
+        - heading "AMAN / SAFE" [level=3] [ref=e28]
+        - paragraph [ref=e29]: Tidak ada ancaman terdeteksi
+      - generic [ref=e35]:
+        - paragraph [ref=e36]: ALARM GERGAJI MESIN
+        - heading "0" [level=3] [ref=e37]
+        - paragraph [ref=e38]: Alert suara Chainsaw (0xAA)
+      - generic [ref=e44]:
+        - paragraph [ref=e45]: ALARM GETARAN POHON
+        - heading "0" [level=3] [ref=e46]
+        - paragraph [ref=e47]: Alert MPU6050 Motion (0xBB)
+      - generic [ref=e52]:
+        - paragraph [ref=e53]: BATERAI NODE HUTAN
+        - heading "—" [level=3] [ref=e54]
+        - paragraph [ref=e55]: "Node ID: —"
+    - generic [ref=e61]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - heading "Riwayat Kejadian Real-Time (Live Feed)" [level=3] [ref=e67]
+          - generic [ref=e68]: Auto-update via Firebase
+        - table [ref=e70]:
+          - rowgroup [ref=e71]:
+            - row [ref=e72]:
+              - columnheader "Waktu" [ref=e73]
+              - columnheader "Node ID" [ref=e74]
+              - columnheader "Tipe Peringatan" [ref=e75]
+              - columnheader "Tingkat AI (%)" [ref=e76]
+              - columnheader "Baterai" [ref=e77]
+              - columnheader "Status" [ref=e78]
+          - rowgroup [ref=e79]:
+            - row [ref=e80]:
+              - cell "Menunggu data peringatan pertama dari Firebase..." [ref=e81]
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - 'heading "Node Hutan #01" [level=3] [ref=e85]'
+            - generic [ref=e92]: MENUNGGU DATA
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: Protokol LoRa
+              - generic [ref=e96]: E220 915MHz
+            - generic [ref=e97]:
+              - generic [ref=e98]: Model TinyML
+              - generic [ref=e99]: TFLite v5 (Chainsaw)
+            - generic [ref=e100]:
+              - generic [ref=e101]: Sensor Audio
+              - generic [ref=e102]: INMP441 I2S
+            - generic [ref=e103]:
+              - generic [ref=e104]: Sensor Motion
+              - generic [ref=e105]: MPU6050 (INT)
+            - generic [ref=e106]:
+              - generic [ref=e107]: Siklus Deep Sleep
+              - generic [ref=e108]: 60 Detik / Trigger
+        - generic [ref=e109]:
+          - heading "Pengaturan Firebase Database" [level=3] [ref=e110]
+          - paragraph [ref=e114]:
+            - text: Build production membaca konfigurasi dari file
+            - code [ref=e115]: .env
+            - text: . Isi form ini hanya jika Pos Jaga perlu menunjuk ke proyek Firebase lain (tersimpan di browser ini saja).
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]: "Database URL (RTDB):"
+              - textbox "Database URL (RTDB):" [ref=e119]:
+                - /placeholder: https://voxsilva-forest-default-rtdb.asia-southeast1.firebasedatabase.app
+            - generic [ref=e120]:
+              - generic [ref=e121]: "API Key:"
+              - textbox "API Key:" [ref=e122]:
+                - /placeholder: AIzaSy...
+            - button "Simpan & Hubungkan Firebase" [ref=e123]
+            - button "Hapus override, kembali ke konfigurasi .env" [ref=e124]
+            - status [ref=e125]: Isi Database URL di bawah, atau set VITE_FIREBASE_DATABASE_URL di .env.

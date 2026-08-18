@@ -1,0 +1,25 @@
+{
+  "name": "voxsilva-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time guard-post dashboard for the VoxSilva illegal-logging detection system.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only database",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "firebase": "^12.17.1",
+    "lucide": "^1.31.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.2.1"
+  }
+}
