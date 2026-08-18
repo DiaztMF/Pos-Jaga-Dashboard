@@ -24,7 +24,6 @@ const ICONS = {
 
 const $ = (id) => document.getElementById(id);
 
-const CONFIG_KEY = 'voxsilva_firebase_config';
 const THEME_KEY = 'voxsilva_theme';
 const LIVE_WINDOW_MS = 60_000; // kejadian lebih tua dari ini adalah riwayat, bukan alarm
 
@@ -380,25 +379,12 @@ function exitDemoMode() {
 
 /* ---------------------------------------------------------------- firebase */
 
-/** Panel pengaturan bersifat opsional: pos jaga yang konfigurasinya sudah
- *  dikunci di .env boleh menghapusnya dari index.html tanpa mematikan apa pun. */
-function setConfigMessage(text) {
-  const target = $('config-message');
-  if (target) target.textContent = text;
-  else console.info('[VoxSilva]', text);
-}
-
+/** Konfigurasi hanya berasal dari .env dan ikut ter-inline saat build. Tidak ada
+ *  jalur kedua lewat localStorage: satu build, satu tujuan database. */
 function readConfig() {
-  let override = null;
-  try {
-    override = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
-  } catch {
-    localStorage.removeItem(CONFIG_KEY); // entri rusak, buang
-  }
   return {
-    databaseURL: override?.databaseURL || import.meta.env.VITE_FIREBASE_DATABASE_URL || '',
-    apiKey: override?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY || '',
-    isOverride: Boolean(override?.databaseURL),
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || '',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   };
 }
 
@@ -411,7 +397,7 @@ function setConnection(state, text) {
 function connect({ databaseURL, apiKey }) {
   if (!databaseURL) {
     setConnection('error', 'Belum dikonfigurasi');
-    setConfigMessage('Set VITE_FIREBASE_DATABASE_URL di .env, lalu build ulang dashboard.');
+    console.error('[VoxSilva] VITE_FIREBASE_DATABASE_URL kosong. Isi .env lalu build ulang.');
     return;
   }
 
@@ -477,21 +463,6 @@ $('log-filter').addEventListener('click', (event) => {
 });
 $('log-filter').firstElementChild.click(); // pasang gaya awal tombol "Semua"
 
-$('form-config')?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  localStorage.setItem(CONFIG_KEY, JSON.stringify({
-    databaseURL: $('input-db-url').value.trim(),
-    apiKey: $('input-api-key').value.trim(),
-  }));
-  setConfigMessage('Tersimpan. Menghubungkan ulang...');
-  location.reload();
-});
-
-$('btn-reset-config')?.addEventListener('click', () => {
-  localStorage.removeItem(CONFIG_KEY);
-  location.reload();
-});
-
 const tickClock = () => {
   const now = Date.now();
   $('clock-date-long').textContent = formatHeaderDate(now);
@@ -512,9 +483,5 @@ if (import.meta.env.DEV) {
   };
 }
 
-const config = readConfig();
-const dbUrlInput = $('input-db-url');
-if (dbUrlInput) dbUrlInput.value = config.databaseURL;
-if (config.isOverride) setConfigMessage('Memakai override lokal, bukan .env.');
 render();
-connect(config);
+connect(readConfig());

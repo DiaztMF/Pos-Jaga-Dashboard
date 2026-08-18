@@ -75,8 +75,8 @@ color as "the forest is fine", which makes a single red panel impossible to miss
 
 - Every device field is validated, clamped, and rendered as text, never as HTML.
 - Missing readings render as `--`, never as a confident `0.00 V`.
-- Configuration comes from `.env`, with an optional per-browser override for pointing one guard post
-  at a different Firebase project.
+- Configuration comes from `.env` alone. No in-page credential form and no browser-stored override,
+  so what a guard post is watching cannot be changed without a rebuild.
 
 ## Interface Design Notes
 
@@ -168,12 +168,9 @@ __voxsilva.simulate('VIBRATION');  // amber warning
 __voxsilva.demo();                 // same as the Mode demo button
 ```
 
-**Optional settings panel.** A guard post that needs to point at a different Firebase project without
-rebuilding can keep the `#form-config` panel in `index.html`; its values are stored in `localStorage`
-for that browser and take precedence over `.env`. The panel is optional, and a deployment whose
-configuration is fixed in `.env` may delete the whole block without breaking anything: the wiring in
-`main.js` is written to tolerate its absence. The same is true of the `[data-empty]` chart
-placeholders.
+**Pointing at another Firebase project.** Edit `.env` and rebuild. There is deliberately no in-page
+settings form and no `localStorage` override: one build targets one database, so a guard post cannot
+be silently repointed from the browser.
 
 ## API Documentation
 
